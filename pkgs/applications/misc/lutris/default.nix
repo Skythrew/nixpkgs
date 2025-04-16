@@ -6,6 +6,7 @@
   # build inputs
   atk,
   file,
+  glib,
   gdk-pixbuf,
   glib-networking,
   gnome-desktop,
@@ -16,6 +17,8 @@
   pango,
   webkitgtk_4_0,
   wrapGAppsHook3,
+  meson,
+  ninja,
 
   # check inputs
   xvfb-run,
@@ -45,11 +48,15 @@
   pulseaudio,
   p7zip,
   xgamma,
+  gettext,
   libstrangle,
   fluidsynth,
   xorgserver,
   xorg,
   util-linux,
+  pkg-config,
+  desktop-file-utils,
+  appstream-glib,
 }:
 
 let
@@ -83,9 +90,18 @@ buildPythonApplication rec {
     hash = "sha256-CAXKnx5+60MITRM8enkYgFl5ZKM6HCXhCYNyG7kHhuQ=";
   };
 
+  format = "other";
+
   nativeBuildInputs = [
-    wrapGAppsHook3
+    appstream-glib
+    desktop-file-utils
+    gettext
+    glib
     gobject-introspection
+    meson
+    ninja
+    wrapGAppsHook3
+    pkg-config
   ];
   buildInputs =
     [
@@ -128,18 +144,16 @@ buildPythonApplication rec {
       --replace '"libmagic.so.1"' "'${lib.getLib file}/lib/libmagic.so.1'"
   '';
 
-  nativeCheckInputs = [
-    xvfb-run
-    nose2
-    flake8
-  ] ++ requiredTools;
-  checkPhase = ''
-    runHook preCheck
+  configurePhase = ''
+    meson setup build --prefix=$out
+  '';
 
-    export HOME=$PWD
-    xvfb-run -s '-screen 0 800x600x24' make test
+  buildPhase = ''
+    ninja -C build
+  '';
 
-    runHook postCheck
+  installPhase = ''
+    ninja -C build install
   '';
 
   # avoid double wrapping
